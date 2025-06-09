@@ -1,0 +1,96 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circle Packing Optimizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Circle Packing Optimization</h1>
+            <p>Maximize the minimum distance between three circles inside a larger circle</p>
+        </header>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label for="big-radius">Large Circle Radius (R):</label>
+                    <input type="range" id="big-radius" min="50" max="200" value="100" step="1">
+                    <span id="big-radius-value">100</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="r1">Circle 1 Radius (r₁):</label>
+                    <input type="range" id="r1" min="5" max="40" value="20" step="1">
+                    <span id="r1-value">20</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="r2">Circle 2 Radius (r₂):</label>
+                    <input type="range" id="r2" min="5" max="40" value="15" step="1">
+                    <span id="r2-value">15</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="r3">Circle 3 Radius (r₃):</label>
+                    <input type="range" id="r3" min="5" max="40" value="25" step="1">
+                    <span id="r3-value">25</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="margin">Min Distance to Edge (d_min):</label>
+                    <input type="range" id="margin" min="0" max="20" value="5" step="1">
+                    <span id="margin-value">5</span>
+                </div>
+
+                <div class="button-group">
+                    <button id="optimize-btn" class="btn-primary">🔍 Optimize Placement</button>
+                    <button id="random-btn" class="btn-secondary">🎲 Random Placement</button>
+                    <button id="reset-btn" class="btn-reset">↻ Reset</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Min Distance:</span>
+                        <span id="min-distance" class="stat-value">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Optimization Steps:</span>
+                        <span id="steps" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Valid Placement:</span>
+                        <span id="valid" class="stat-value">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="visualization-panel">
+                <canvas id="canvas" width="600" height="600"></canvas>
+                <div class="progress-bar">
+                    <div id="progress" class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <h3>Optimization Problem</h3>
+            <div class="formula">
+                <strong>Objective:</strong> Maximize D where D ≤ min(d₁₂, d₁₃, d₂₃)
+                <br>
+                <strong>Subject to:</strong>
+                <ul>
+                    <li>√(xᵢ² + yᵢ²) + rᵢ ≤ R (circles inside large circle)</li>
+                    <li>√(xᵢ² + yᵢ²) ≤ R - rᵢ - d_min (margin from edge)</li>
+                    <li>√((xᵢ - xⱼ)² + (yᵢ - yⱼ)²) ≥ rᵢ + rⱼ (no overlap)</li>
+                    <li>D ≤ √((xᵢ - xⱼ)² + (yᵢ - yⱼ)²) - (rᵢ + rⱼ) (edge distances)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="optimizer.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
