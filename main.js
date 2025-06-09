@@ -14,8 +14,20 @@ class CircleVisualization {
     }
 
     setupEventListeners() {
-        // Range inputs
-        const inputs = ['big-radius', 'r1', 'r2', 'r3', 'margin'];
+        // Number of circles control
+        const numCirclesInput = document.getElementById('num-circles');
+        const numCirclesValue = document.getElementById('num-circles-value');
+        
+        numCirclesInput.addEventListener('input', (e) => {
+            const n = parseInt(e.target.value);
+            numCirclesValue.textContent = n;
+            this.generateCircleControls(n);
+            this.updateParameters();
+            this.draw();
+        });
+
+        // Range inputs for static controls
+        const inputs = ['big-radius', 'margin'];
         inputs.forEach(id => {
             const input = document.getElementById(id);
             const valueSpan = document.getElementById(id + '-value');
@@ -26,6 +38,9 @@ class CircleVisualization {
                 this.draw();
             });
         });
+
+        // Generate initial circle controls
+        this.generateCircleControls(3);
 
         // Buttons
         document.getElementById('optimize-btn').addEventListener('click', () => {
@@ -41,14 +56,46 @@ class CircleVisualization {
         });
     }
 
+    generateCircleControls(n) {
+        const container = document.getElementById('circle-controls');
+        container.innerHTML = '';
+        
+        for (let i = 0; i < n; i++) {
+            const div = document.createElement('div');
+            div.className = 'circle-control';
+            div.innerHTML = `
+                <label for="r${i}">Circle ${i + 1} Radius (r₍${i + 1}₎):</label>
+                <input type="range" id="r${i}" min="5" max="40" value="${15 + i * 5}" step="1">
+                <span id="r${i}-value">${15 + i * 5}</span>
+            `;
+            container.appendChild(div);
+            
+            // Add event listener for this control
+            const input = div.querySelector(`#r${i}`);
+            const valueSpan = div.querySelector(`#r${i}-value`);
+            
+            input.addEventListener('input', (e) => {
+                valueSpan.textContent = e.target.value;
+                this.updateParameters();
+                this.draw();
+            });
+        }
+    }
+
     updateParameters() {
         const R = parseInt(document.getElementById('big-radius').value);
-        const r1 = parseInt(document.getElementById('r1').value);
-        const r2 = parseInt(document.getElementById('r2').value);
-        const r3 = parseInt(document.getElementById('r3').value);
         const margin = parseInt(document.getElementById('margin').value);
+        const n = parseInt(document.getElementById('num-circles').value);
         
-        this.optimizer.setParameters(R, r1, r2, r3, margin);
+        const radii = [];
+        for (let i = 0; i < n; i++) {
+            const radiusInput = document.getElementById(`r${i}`);
+            if (radiusInput) {
+                radii.push(parseInt(radiusInput.value));
+            }
+        }
+        
+        this.optimizer.setParameters(R, radii, margin);
         this.updateDisplay();
     }
 
@@ -148,7 +195,7 @@ class CircleVisualization {
         this.drawGrid(ctx);
         
         // Draw small circles
-        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1'];
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd', '#98fb98', '#f0e68c'];
         const isValid = this.optimizer.isValidConfiguration(this.optimizer.circles);
         
         this.optimizer.circles.forEach((circle, index) => {
@@ -157,13 +204,13 @@ class CircleVisualization {
             const r = circle.r * this.scale;
             
             // Circle fill
-            ctx.fillStyle = isValid ? colors[index] + '80' : '#ff000040';
+            ctx.fillStyle = isValid ? colors[index % colors.length] + '80' : '#ff000040';
             ctx.beginPath();
             ctx.arc(x, y, r, 0, 2 * Math.PI);
             ctx.fill();
             
             // Circle border
-            ctx.strokeStyle = isValid ? colors[index] : '#ff0000';
+            ctx.strokeStyle = isValid ? colors[index % colors.length] : '#ff0000';
             ctx.lineWidth = 2;
             ctx.stroke();
             
@@ -234,8 +281,8 @@ class CircleVisualization {
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
         
-        for (let i = 0; i < 3; i++) {
-            for (let j = i + 1; j < 3; j++) {
+        for (let i = 0; i < circles.length; i++) {
+            for (let j = i + 1; j < circles.length; j++) {
                 const x1 = circles[i].x * this.scale;
                 const y1 = circles[i].y * this.scale;
                 const x2 = circles[j].x * this.scale;
@@ -247,27 +294,29 @@ class CircleVisualization {
                 const dx = x2 - x1;
                 const dy = y2 - y1;
                 const centerDist = Math.sqrt(dx * dx + dy * dy);
-                const edgeX1 = x1 + (dx / centerDist) * r1;
-                const edgeY1 = y1 + (dy / centerDist) * r1;
-                const edgeX2 = x2 - (dx / centerDist) * r2;
-                const edgeY2 = y2 - (dy / centerDist) * r2;
-                
-                ctx.beginPath();
-                ctx.moveTo(edgeX1, edgeY1);
-                ctx.lineTo(edgeX2, edgeY2);
-                ctx.stroke();
-                
-                // Distance label
-                const midX = (edgeX1 + edgeX2) / 2;
-                const midY = (edgeY1 + edgeY2) / 2;
-                const dx_real = circles[i].x - circles[j].x;
-                const dy_real = circles[i].y - circles[j].y;
-                const distance = Math.sqrt(dx_real * dx_real + dy_real * dy_real) - circles[i].r - circles[j].r;
-                
-                ctx.fillStyle = '#ff8c00';
-                ctx.font = '12px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(`D=${distance.toFixed(1)}`, midX, midY - 5);
+                if (centerDist > 0) {
+                    const edgeX1 = x1 + (dx / centerDist) * r1;
+                    const edgeY1 = y1 + (dy / centerDist) * r1;
+                    const edgeX2 = x2 - (dx / centerDist) * r2;
+                    const edgeY2 = y2 - (dy / centerDist) * r2;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(edgeX1, edgeY1);
+                    ctx.lineTo(edgeX2, edgeY2);
+                    ctx.stroke();
+                    
+                    // Distance label
+                    const midX = (edgeX1 + edgeX2) / 2;
+                    const midY = (edgeY1 + edgeY2) / 2;
+                    const dx_real = circles[i].x - circles[j].x;
+                    const dy_real = circles[i].y - circles[j].y;
+                    const distance = Math.sqrt(dx_real * dx_real + dy_real * dy_real) - circles[i].r - circles[j].r;
+                    
+                    ctx.fillStyle = '#ff8c00';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`D=${distance.toFixed(1)}`, midX, midY - 5);
+                }
             }
         }
         
@@ -275,26 +324,36 @@ class CircleVisualization {
     }
 
     drawLegend(ctx) {
+        const n = this.optimizer.circles.length;
+        const legendHeight = 30 + n * 15 + 30;
+        
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.fillRect(10, 10, 200, 80);
+        ctx.fillRect(10, 10, 200, legendHeight);
         
         ctx.strokeStyle = '#ddd';
         ctx.lineWidth = 1;
-        ctx.strokeRect(10, 10, 200, 80);
+        ctx.strokeRect(10, 10, 200, legendHeight);
         
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
         ctx.textAlign = 'left';
         
-        ctx.fillText('Legend:', 20, 30);
-        ctx.fillText('🔴 Circle 1', 20, 45);
-        ctx.fillText('🟢 Circle 2', 20, 60);
-        ctx.fillText('🔵 Circle 3', 20, 75);
+        let yPos = 30;
+        ctx.fillText('Legend:', 20, yPos);
         
-        ctx.fillText('Orange lines: distances', 110, 30);
-        ctx.fillText('Orange circle: margin', 110, 45);
-        ctx.fillText('Blue area: container', 110, 60);
-        ctx.fillText(`Margin: ${this.optimizer.margin}`, 110, 75);
+        for (let i = 0; i < n; i++) {
+            yPos += 15;
+            ctx.fillText(`● Circle ${i + 1}`, 20, yPos);
+        }
+        
+        yPos += 20;
+        ctx.fillText('Orange lines: distances', 20, yPos);
+        yPos += 15;
+        ctx.fillText('Orange circle: margin', 20, yPos);
+        yPos += 15;
+        ctx.fillText('Blue area: container', 20, yPos);
+        yPos += 15;
+        ctx.fillText(`Margin: ${this.optimizer.margin}`, 20, yPos);
     }
 }
 

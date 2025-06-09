@@ -3,31 +3,33 @@ class CirclePackingOptimizer {
         this.R = 100; // Large circle radius
         this.r = [20, 15, 25]; // Small circles radii
         this.margin = 5; // Minimum distance to edge
-        this.circles = [
-            { x: 0, y: 0, r: this.r[0] },
-            { x: 0, y: 0, r: this.r[1] },
-            { x: 0, y: 0, r: this.r[2] }
-        ];
+        this.circles = this.initializeCircles();
         this.bestSolution = null;
         this.bestScore = -Infinity;
         this.isOptimizing = false;
     }
 
-    setParameters(R, r1, r2, r3, margin = 5) {
+    initializeCircles() {
+        return this.r.map((radius, index) => ({
+            x: 0, y: 0, r: radius
+        }));
+    }
+
+    setParameters(R, radii, margin = 5) {
         this.R = R;
-        this.r = [r1, r2, r3];
+        this.r = [...radii];
         this.margin = margin;
-        this.circles[0].r = r1;
-        this.circles[1].r = r2;
-        this.circles[2].r = r3;
+        this.circles = this.initializeCircles();
         this.bestSolution = null;
         this.bestScore = -Infinity;
     }
 
     // Check if a configuration is valid (no overlaps, all inside big circle with margin)
     isValidConfiguration(circles) {
+        const n = circles.length;
+        
         // Check if all circles are inside the big circle with margin
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < n; i++) {
             const dist = Math.sqrt(circles[i].x * circles[i].x + circles[i].y * circles[i].y);
             if (dist + circles[i].r + this.margin > this.R) {
                 return false;
@@ -35,8 +37,8 @@ class CirclePackingOptimizer {
         }
 
         // Check if circles don't overlap
-        for (let i = 0; i < 3; i++) {
-            for (let j = i + 1; j < 3; j++) {
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
                 const dx = circles[i].x - circles[j].x;
                 const dy = circles[i].y - circles[j].y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -50,9 +52,11 @@ class CirclePackingOptimizer {
 
     // Calculate minimum distance between circle edges
     calculateMinDistance(circles) {
+        const n = circles.length;
         let minDist = Infinity;
-        for (let i = 0; i < 3; i++) {
-            for (let j = i + 1; j < 3; j++) {
+        
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
                 const dx = circles[i].x - circles[j].x;
                 const dy = circles[i].y - circles[j].y;
                 const centerDist = Math.sqrt(dx * dx + dy * dy);
@@ -65,13 +69,14 @@ class CirclePackingOptimizer {
 
     // Generate random valid configuration
     generateRandomConfiguration() {
+        const n = this.r.length;
         const maxAttempts = 1000;
         let attempts = 0;
         
         while (attempts < maxAttempts) {
             const newCircles = [];
             
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < n; i++) {
                 const maxRadius = this.R - this.r[i] - this.margin;
                 const angle = Math.random() * 2 * Math.PI;
                 const radius = Math.random() * maxRadius;
@@ -89,21 +94,30 @@ class CirclePackingOptimizer {
             attempts++;
         }
         
-        // Fallback: place circles in a triangle formation
-        return this.generateTriangleConfiguration();
+        // Fallback: place circles in a regular polygon formation
+        return this.generatePolygonConfiguration();
     }
 
-    // Generate triangle configuration as fallback
-    generateTriangleConfiguration() {
-        const totalRadius = this.r[0] + this.r[1] + this.r[2];
+    // Generate polygon configuration as fallback
+    generatePolygonConfiguration() {
+        const n = this.r.length;
+        const totalRadius = this.r.reduce((sum, r) => sum + r, 0);
         const availableRadius = this.R - this.margin;
-        const scale = Math.min(1, (availableRadius * 0.6) / totalRadius);
+        const scale = Math.min(1, (availableRadius * 0.5) / (totalRadius / n));
+        const circles = [];
         
-        return [
-            { x: 0, y: -availableRadius * 0.3 * scale, r: this.r[0] },
-            { x: -availableRadius * 0.3 * scale, y: availableRadius * 0.2 * scale, r: this.r[1] },
-            { x: availableRadius * 0.3 * scale, y: availableRadius * 0.2 * scale, r: this.r[2] }
-        ];
+        for (let i = 0; i < n; i++) {
+            const angle = (2 * Math.PI * i) / n;
+            const radius = availableRadius * 0.3 * scale;
+            
+            circles.push({
+                x: radius * Math.cos(angle),
+                y: radius * Math.sin(angle),
+                r: this.r[i]
+            });
+        }
+        
+        return circles;
     }
 
     // Simulated annealing optimization
@@ -161,7 +175,7 @@ class CirclePackingOptimizer {
         const moveAmount = 5;
         
         // Randomly select a circle to move
-        const circleIndex = Math.floor(Math.random() * 3);
+        const circleIndex = Math.floor(Math.random() * newSolution.length);
         
         // Add random perturbation
         newSolution[circleIndex].x += (Math.random() - 0.5) * moveAmount;
@@ -257,8 +271,9 @@ class CirclePackingOptimizer {
     }
 
     crossover(parent1, parent2) {
+        const n = parent1.length;
         const offspring = [];
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < n; i++) {
             if (Math.random() < 0.5) {
                 offspring.push({
                     x: parent1[i].x,
@@ -278,7 +293,7 @@ class CirclePackingOptimizer {
 
     mutate(individual) {
         const mutationStrength = 10;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < individual.length; i++) {
             if (Math.random() < 0.3) {
                 individual[i].x += (Math.random() - 0.5) * mutationStrength;
                 individual[i].y += (Math.random() - 0.5) * mutationStrength;

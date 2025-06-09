@@ -236,6 +236,19 @@ body {
     margin: 5px 0;
 }
 
+.circle-control {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
+}
+
+.circle-control label {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
 @media (max-width: 1024px) {
     .main-content {
         grid-template-columns: 1fr;
@@ -262,4 +275,3 @@ body {
 .btn-primary:active {
     animation: pulse 0.3s ease;
 }
-
